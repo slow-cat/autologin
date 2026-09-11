@@ -1,0 +1,16 @@
+[package]
+name = "autoconnect"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+futures-util = { version = "0.3.34", default-features = false }
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "form"] }
+tokio = { version = "1.53.1", features = ["rt", "macros", "time"] }
+zbus = { version = "5.19.0", default-features = false, features = ["tokio"] }
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

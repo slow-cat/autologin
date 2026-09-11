@@ -9,9 +9,10 @@ const PROBE: &str = "https://connectivitycheck.gstatic.com/generate_204";
 const AUTH: &str = "https://login.shinshu-u.ac.jp/cgi-bin/Login.cgi";
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let dir = std::env::var("CREDENTIALS_DIRECTORY")?;
-    let uid = read_to_string(format!("{dir}/uid"))?;
-    let pwd = read_to_string(format!("{dir}/pwd"))?;
+    let dir = std::env::var("CREDENTIALS_DIRECTORY")
+        .inspect_err(|e| eprintln!("CREDENTIALS_DIRECTORY: {e}"))?;
+    let uid = read_to_string(format!("{dir}/uid")).inspect_err(|e| eprintln!("UID FILE: {e}"))?;
+    let pwd = read_to_string(format!("{dir}/pwd")).inspect_err(|e| eprintln!("PWD FILE: {e}"))?;
     let bus = Connection::system().await?;
     let http = reqwest::Client::builder()
         .timeout(Duration::from_secs(5))

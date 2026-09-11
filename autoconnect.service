@@ -1,0 +1,13 @@
+[Unit]
+Description=/home/moamoa/.cargo/bin/autoconnect
+
+[Service]
+ExecStart="/home/moamoa/.cargo/bin/autoconnect"
+LoadCredential=uid:/etc/secrets/shinshu-password/uid
+LoadCredential=pwd:/etc/secrets/shinshu-password/pwd
+Restart=on-failure
+[Install]
+WantedBy=default.target
+[Service]
+StandardOutput=journal
+StandardError=journal

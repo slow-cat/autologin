@@ -1,7 +1,7 @@
-use std::{fs::read_to_string, time::Duration};
-
+use anyhow::Result;
 use futures_util::StreamExt;
 use reqwest::{Client, StatusCode};
+use std::{fs::read_to_string, time::Duration};
 use tokio::time::{self, Interval};
 use zbus::{Connection, Proxy, fdo::ObjectManagerProxy, zvariant::OwnedObjectPath};
 
@@ -15,6 +15,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pwd = read_to_string(format!("{dir}/pwd")).inspect_err(|e| eprintln!("PWD FILE: {e}"))?;
     let bus = Connection::system().await?;
     let http = reqwest::Client::builder()
+        .use_native_tls()
         .timeout(Duration::from_secs(5))
         .connect_timeout(Duration::from_secs(1))
         .build()?;
@@ -54,13 +55,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             _=async{offline_timer.as_mut().unwrap().tick().await},
                 if offline_timer.is_some()=>{
                     if let Err(e) = login(&bus, &http, &mut offline_timer,&uid,&pwd).await{
-                        eprintln!("login error: {e}")
+                        eprintln!("login error: {e:#}")
                     };
                 }
         }
     }
 }
-async fn get_ssid(bus: &Connection) -> Result<String, Box<dyn std::error::Error>> {
+async fn get_ssid(bus: &Connection) -> Result<String> {
     let objects = ObjectManagerProxy::builder(bus)
         .destination("net.connman.iwd")?
         .path("/")?
@@ -84,7 +85,7 @@ async fn get_ssid(bus: &Connection) -> Result<String, Box<dyn std::error::Error>
             return Ok(ssid);
         }
     }
-    Err("no connected WiFi network".into())
+    Err(anyhow::anyhow!("no connected WiFi network"))
 }
 
 async fn check_validation(
@@ -100,7 +101,12 @@ async fn check_validation(
 
     println!("{}", if online { "online" } else { "offline" });
     let ssid = get_ssid(bus).await?;
-    if !online && matches!(ssid.as_str(), "engineering-wifi" | "cs115" | "cs416") {
+    if !online
+        && matches!(
+            ssid.as_str(),
+            "engineering-wifi" | "cs115" | "cs416" | "cs215" | "cs316"
+        )
+    {
         if offline_timer.is_none() {
             *offline_timer = Some(time::interval(Duration::from_secs(10)));
         }
@@ -115,10 +121,13 @@ async fn login(
     offline_timer: &mut Option<Interval>,
     uid: &String,
     pwd: &String,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let ssid = get_ssid(bus).await?;
     println!("SSID: {ssid}");
-    if matches!(ssid.as_str(), "engineering-wifi" | "cs115" | "cs416") {
+    if matches!(
+        ssid.as_str(),
+        "engineering-wifi" | "cs115" | "cs416" | "cs215" | "cs316"
+    ) {
         match http
             .post(AUTH)
             .form(&[("uid", uid.as_str()), ("pwd", pwd.as_str())])

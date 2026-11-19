@@ -1,6 +1,5 @@
 [Unit]
-Description=/home/moamoa/.cargo/bin/autoconnect
-
+Description=Automatically login to shinshu-u wifi
 [Service]
 ExecStart="/home/moamoa/.cargo/bin/autoconnect"
 LoadCredential=uid:/etc/secrets/shinshu-password/uid
